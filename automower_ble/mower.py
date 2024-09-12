@@ -8,6 +8,7 @@ how the request and response classes can be used.
 
 import argparse
 import asyncio
+import json
 import logging
 from datetime import datetime, timezone
 
@@ -84,7 +85,7 @@ class Mower(BLEClient):
         return model_information.model
 
     async def is_charging(self) -> bool:
-        if await mower.command("IsCharging"):
+        if await self.command("IsCharging"):
             return True
         else:
             return False
@@ -247,6 +248,8 @@ async def main(mower: Mower):
         print("command result = " + str(cmd_result))
 
     # moved last message after command, this seems to cause all future commands/queries to fail
+    next_start_time = await mower.command("GetNextStartTime")
+    print("GetNextStartTime: " + json.dumps(next_start_time))
     last_message = await mower.command("GetMessage", messageId=0)
     print("Last message: ")
     print(
