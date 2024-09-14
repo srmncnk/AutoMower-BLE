@@ -146,8 +146,11 @@ class MyApp(App):
         except:
             update_label_text("Error.")
         finally:
-            await mower.disconnect()
-            update_label_text("Disconnected from mower.")
+            try:
+                await mower.disconnect()
+                update_label_text("Disconnected from mower.")
+            except:
+                update_label_text("Error disconnecting from mower.")
 
     def label_update(self, new_text):
         self.label.text += "\n" + new_text

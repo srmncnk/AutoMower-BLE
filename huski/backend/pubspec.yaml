@@ -1,0 +1,31 @@
+name: huski_backend
+description: Huski backend
+
+environment:
+  sdk: '>=2.19.6 <3.0.0'
+
+dependencies:
+  archive:
+  args: ^2.3.0
+  crypto: ^3.0.1
+  encrypt:
+  http: ^0.13.0
+  jose:
+  mailer:
+  minio:
+  oauth2:
+  pointycastle:
+  postgres:
+  redis:
+  shelf: ^1.2.0
+  shelf_cors_headers: ^0.1.2
+  shelf_multipart: ^0.1.0
+  shelf_proxy: ^1.0.2
+  shelf_router: ^1.1.1
+  yaml:
+  yaml_writer:
+  uuid:
+  version:
+
+dev_dependencies:
+  pedantic: ^1.8.0

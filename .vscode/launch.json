@@ -8,8 +8,18 @@
             "name": "Debug Find my Huski",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/app/main.py",
+            "program": "${workspaceFolder}/huski/findmyhuski/main.py",
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "Debug Backend",
+            "type": "dart",
+            "request": "launch",
+            "program": "${workspaceFolder}/huski/backend/lib/main.dart",
+            "cwd": "${workspaceFolder}/huski/backend/",
+            "args": [
+                "--config=${workspaceFolder}/huski/backend/config/config.yml",
+            ]
+        },
     ]
 }
