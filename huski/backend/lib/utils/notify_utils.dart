@@ -37,8 +37,8 @@ class Notifier {
         if (state.state != null) "readable_state": state.toString(),
         if (state.activity != null) "readable_activity": state.activity!.toString(),
         if (state.lastMessage != null) "readable_last_message": state.lastMessage!.toString(),
-        if (state.lastMessageTime != null) "readable_last_message_time": DateTime.fromMillisecondsSinceEpoch(state.lastMessageTime!),
-        if (state.nextStartTime != null) "readable_next_start_time": DateTime.fromMillisecondsSinceEpoch(state.nextStartTime!),
+        if (state.lastMessageTime != null) "readable_last_message_time": DateTime.fromMillisecondsSinceEpoch(state.lastMessageTime!).toIso8601String(),
+        if (state.nextStartTime != null) "readable_next_start_time": DateTime.fromMillisecondsSinceEpoch(state.nextStartTime!).toIso8601String(),
       });
 
     try {

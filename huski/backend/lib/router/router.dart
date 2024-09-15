@@ -37,8 +37,8 @@ Router _initPublicRoutes(ApplicationConfig config, PostgreSQLConnection database
   final routes = Router();
 
   //* CommandService
-  final commandRepository = RedisRepository(redis);
-  final commandService = CommandService(commandRepository);
+  final redisRepository = RedisRepository(redis);
+  final commandService = CommandService(redisRepository);
   routes.get("/command", commandService.get);
   routes.post("/command", commandService.post);
 
@@ -53,7 +53,7 @@ Router _initPublicRoutes(ApplicationConfig config, PostgreSQLConnection database
     config.email.to,
   );
   final stateRepository = StateRepository(database);
-  final stateService = StateService(stateRepository, commandRepository, notifier);
+  final stateService = StateService(stateRepository, redisRepository, notifier);
   routes.get("/state", stateService.get);
   routes.post("/state", stateService.post);
 

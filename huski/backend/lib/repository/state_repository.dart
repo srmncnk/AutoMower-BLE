@@ -32,9 +32,9 @@ class StateRepository {
       "@numberOfCollisions, @numberOfChargingCycles, @bladeUsageTime, @createdAt) "
       "RETURNING $_fields",
       substitutionValues: {
-        "state": state.state,
-        "activity": state.activity,
-        "lastMessage": state.lastMessage,
+        "state": state.state?.index,
+        "activity": state.activity?.index,
+        "lastMessage": state.lastMessage?.index,
         "lastMessageTime": state.lastMessageTime,
         "nextStartTime": state.nextStartTime,
         "batteryLevel": state.batteryLevel,

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import json
 from bleak import BleakScanner
+import httpx
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.clock import Clock
@@ -143,8 +144,35 @@ class MyApp(App):
             update_label_text(datetime.fromtimestamp(last_message["time"], timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
             update_label_text(ErrorCodes(last_message["code"]).name)
             update_label_text(f"Last check: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        except:
-            update_label_text("Error.")
+
+            data = {}
+            data["name"] = mower_name
+            data["model"] = model
+            data["serial_number"] = serial_number
+            data["manufacturer"] = manufacturer
+            data["state"] = state.value if state else None
+            data["activity"] = activity.value if activity else None
+            data["last_message"] = ErrorCodes(last_message["code"]).value if last_message["code"] else None
+            data["last_message_time"] = last_message["time"]
+            data["next_start_time"] = next_start_time
+            data["battery_level"] = battery_level
+            data["is_charging"] = charging
+            data["total_running_time"] = statuses["totalRunningTime"]
+            data["total_cutting_time"] = statuses["totalCuttingTime"]
+            data["total_charging_time"] = statuses["totalChargingTime"]
+            data["total_searching_time"] = statuses["totalSearchingTime"]
+            data["number_of_collisions"] = statuses["numberOfCollisions"]
+            data["number_of_charging_cycles"] = statuses["numberOfChargingCycles"]
+            data["blade_usage_time"] = statuses["cuttingBladeUsageTime"]
+            client = httpx.Client()
+            url = "https://api.irmancnik.dev/huski/v1/state"
+            response = client.post(url, json=data)
+            if response.status_code == 200:
+                update_label_text("Data successfully sent to the server.")
+            else:
+                update_label_text(f"Failed to send data. Status code: {response.status_code}")
+        except Exception as e:
+            update_label_text(f"Error. {e}")
         finally:
             try:
                 await mower.disconnect()
@@ -160,57 +188,3 @@ class MyApp(App):
 
 if __name__ == '__main__':
     MyApp().run()
-
-# from kivy.app import App
-# from kivy.uix.boxlayout import BoxLayout
-# from kivy.uix.button import Button
-# from kivy.uix.label import Label
-# from kivy.uix.scrollview import ScrollView
-# from kivy.uix.gridlayout import GridLayout
-# from kivy.clock import mainthread
-# from bleak import BleakScanner
-# import asyncio
-
-# class BLEScannerApp(App):
-#     def build(self):
-#         self.layout = BoxLayout(orientation='vertical')
-
-#         # Button to start BLE scan
-#         self.scan_button = Button(text='Scan for BLE Devices', size_hint_y=None, height=50)
-#         self.scan_button.bind(on_press=self.scan_for_devices)
-
-#         self.layout.add_widget(self.scan_button)
-
-#         # Scrollable area to display devices
-#         self.scroll_view = ScrollView(size_hint=(1, None), size=(400, 400))
-#         self.grid = GridLayout(cols=1, size_hint_y=None)
-#         self.grid.bind(minimum_height=self.grid.setter('height'))
-
-#         self.scroll_view.add_widget(self.grid)
-#         self.layout.add_widget(self.scroll_view)
-
-#         return self.layout
-
-#     async def scan(self):
-#         # Start the BLE scanning using Bleak
-#         devices = await BleakScanner.discover()
-#         self.display_devices(devices)
-
-#     def scan_for_devices(self, instance):
-#         # Launch the scan in a background thread
-#         asyncio.run(self.scan())
-
-#     @mainthread
-#     def display_devices(self, devices):
-#         # Clear the previous device list
-#         self.grid.clear_widgets()
-
-#         if not devices:
-#             self.grid.add_widget(Label(text="No BLE devices found", size_hint_y=None, height=40))
-#         else:
-#             for device in devices:
-#                 self.grid.add_widget(Label(text=f'{device.name} ({device.address})', size_hint_y=None, height=40))
-
-# if __name__ == '__main__':
-#     BLEScannerApp().run()
-
