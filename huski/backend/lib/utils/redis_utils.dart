@@ -8,8 +8,12 @@ extension RedisSetterOnRedisCommand on Command {
     return setWithTTL(key, value, timeToLive);
   }
 
-  Future<void> setWithTTL(String key, String? value, Duration timeToLive) async {
+  Future<void> setWithTTL(String key, String value, Duration timeToLive) async {
     await send_object(["SET", key, value]);
-    if (value != null) await send_object(['EXPIRE', key, timeToLive.inSeconds]);
+    await send_object(['EXPIRE', key, timeToLive.inSeconds]);
+  }
+
+  Future<void> delete(String key) async {
+    await send_object(["DEL", key]);
   }
 }

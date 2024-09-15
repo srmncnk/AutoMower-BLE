@@ -17,13 +17,17 @@ class RedisRepository {
     return command;
   }
 
-  Future<void> saveCommand(String? command) async {
+  Future<void> saveCommand(String command) async {
     await redis.setWithTTL(_commandKey, command, 2.minutes);
   }
 
+  Future<void> deleteCommand() async {
+    await redis.delete(_commandKey);
+  }
+
   Future<String?> loadLastHandledMessage() async {
-    final command = await redis.get(_messageKey) as String?;
-    return command;
+    final message = await redis.get(_messageKey) as String?;
+    return message;
   }
 
   Future<void> saveLastHandledMessage(String message) async {

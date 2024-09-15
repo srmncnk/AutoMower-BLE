@@ -45,7 +45,7 @@ class StateService with ServiceRenderer {
 
     await stateRepository.deleteWhereOlderThan(DateTime.now().toUtc().subtract(30.days));
     final command = await redisRepository.loadCommand();
-    await redisRepository.saveCommand(null);
+    await redisRepository.deleteCommand();
     return renderSuccess({"command": command}, request, log);
   }
 }
