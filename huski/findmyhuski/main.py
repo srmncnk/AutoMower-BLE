@@ -12,8 +12,8 @@ from my_automower_ble.mower import Mower
 
 # For Android-specific imports
 if platform == 'android':
-    from jnius import autoclass
-    from android.permissions import request_permissions, Permission
+    from jnius import autoclass # type: ignore
+    from android.permissions import request_permissions, Permission # type: ignore
 
 # Create the App class
 class MyApp(App):
@@ -23,7 +23,7 @@ class MyApp(App):
         if platform == 'android':
             self.check_android_permissions()
 
-        Clock.schedule_interval(self.start_background_thread, 30)
+        Clock.schedule_interval(self.start_background_thread, 60)
         # self.start_background_thread()
 
         return self.label
@@ -31,12 +31,12 @@ class MyApp(App):
     def check_android_permissions(self):
         from kivy.utils import platform
         if platform == 'android':
-            from jnius import autoclass
+            from jnius import autoclass # type: ignore
             autoclass('org.jnius.NativeInvocationHandler')
             autoclass('com.github.hbldh.bleak.PythonScanCallback')
             autoclass('com.github.hbldh.bleak.PythonBluetoothGattCallback')
             autoclass('com.github.hbldh.bleak.PythonScanCallback$Interface')
-            from android.permissions import request_permissions, Permission
+            from android.permissions import request_permissions, Permission # type: ignore
 
             # Define callback to handle permission results
             def callback(permissions, results):
@@ -65,6 +65,11 @@ class MyApp(App):
 
 
     def start_background_thread(self, _):
+        current_time = datetime.now().time()
+        start_time = current_time.replace(hour=7, minute=0, second=0, microsecond=0)
+        end_time = current_time.replace(hour=21, minute=0, second=0, microsecond=0)
+        if current_time < start_time or current_time > end_time:
+            return
         asyncio.run(self.call_mower())
 
     async def call_mower(self):
@@ -80,7 +85,7 @@ class MyApp(App):
 
             from kivy.utils import platform
             if platform == 'android':
-                from jnius import autoclass
+                from jnius import autoclass # type: ignore
                 autoclass('org.jnius.NativeInvocationHandler')
                 autoclass('com.github.hbldh.bleak.PythonScanCallback')
                 autoclass('com.github.hbldh.bleak.PythonBluetoothGattCallback')
@@ -168,7 +173,24 @@ class MyApp(App):
             url = "https://api.irmancnik.dev/huski/v1/state"
             response = client.post(url, json=data)
             if response.status_code == 200:
-                update_label_text("Data successfully sent to the server.")
+                response_data = response.json()
+                if "command" in response_data and response_data["command"]:
+                    command = response_data["command"]
+                    update_label_text(f"Executing command: {command}")
+                    match command:
+                        case "park":
+                            result = await mower.mower_park()
+                        case "pause":
+                            result = await mower.mower_pause()
+                        case "resume":
+                            result = await mower.mower_resume()
+                        case "override":
+                            result = await mower.mower_override()
+                        case _:
+                            result = "unknown command"
+                    update_label_text(f"Command result: {str(result)}")
+                else:
+                    update_label_text("Data sent, no command found.")
             else:
                 update_label_text(f"Failed to send data. Status code: {response.status_code}")
         except Exception as e:

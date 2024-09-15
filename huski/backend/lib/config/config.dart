@@ -93,7 +93,7 @@ class _ApplicationEmailConfig with Serializable {
         password = yaml?["password"] as String,
         from = yaml?["from"] as String? ?? "fittipaldeux@gmail.com",
         fromName = yaml?["from_name"] as String? ?? "Find My Huski",
-        to = yaml?["to"] as List<String>? ?? ["simonescu@gmail.com"];
+        to = (yaml?["to"] as YamlList?)?.map((item) => item as String).toList() ?? ["simonescu@gmail.com"];
 
   @override
   Json toJson() => {

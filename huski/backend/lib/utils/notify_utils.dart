@@ -18,7 +18,7 @@ class Notifier {
   final List<String> to;
   final ServiceLogger log = ServiceLogger("Notifier");
 
-  Future<void> notify(State state) async {
+  Future<void> notify(MowerState state) async {
     final smtpServer = SmtpServer(
       address,
       port: port,

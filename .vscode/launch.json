@@ -21,5 +21,11 @@
                 "--config=${workspaceFolder}/huski/backend/config/config.yml",
             ]
         },
+        {
+            "name": "Debug My Huski",
+            "type": "dart",
+            "request": "launch",
+            "program": "${workspaceFolder}/huski/my_huski/lib/main.dart",
+        },
     ]
 }

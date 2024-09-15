@@ -1,70 +1,153 @@
-import "dart:async";
+import "package:flutter/material.dart";
+import "package:infinite_scroll_pagination/infinite_scroll_pagination.dart";
+import "package:http/http.dart" as http;
+import "dart:convert";
 
-import "package:collection/collection.dart";
-import "package:postgres/postgres.dart";
+class StatusPage extends StatefulWidget {
+  const StatusPage({super.key});
 
-import "../utils/json_utils.dart";
+  @override
+  State<StatusPage> createState() => _StatusPageState();
+}
 
-class StateRepository {
-  StateRepository(this.database);
+class _StatusPageState extends State<StatusPage> {
+  static const _pageSize = 10;
+  final PagingController<int, MowerState> _pagingController = PagingController(firstPageKey: 0);
 
-  final PostgreSQLConnection database;
-  static const _fields = "state, activity, last_message, last_message_time, next_start_time, battery_level, is_charging, "
-      "total_running_time, total_cutting_time, total_charging_time, total_searching_time, number_of_collisions, "
-      "number_of_charging_cycles, blade_usage_time, created_at";
-
-  Future<List<MowerState>> list(int page, int limit) async {
-    final result = await database.query(
-      "SELECT $_fields "
-      "FROM state "
-      "ORDER BY created_at DESC "
-      "LIMIT @limit OFFSET @offset ",
-      substitutionValues: {
-        "limit": limit,
-        "offset": page * limit,
-      },
-    );
-    final rows = result.map((row) => row.toColumnMap());
-    return rows.map(MowerState.fromJson).toList();
+  @override
+  void initState() {
+    _pagingController.addPageRequestListener((pageKey) {
+      _fetchPage(pageKey);
+    });
+    super.initState();
   }
 
-  Future<MowerState?> save(MowerState state) async {
-    final result = await database.query(
-      "INSERT INTO state "
-      "($_fields) "
-      "VALUES (@state, @activity, @lastMessage, @lastMessageTime, @nextStartTime, @batteryLevel, @isCharging, "
-      "@totalRunningTime, @totalCuttingTime, @totalChargingTime, @totalSearchingTime, "
-      "@numberOfCollisions, @numberOfChargingCycles, @bladeUsageTime, @createdAt) "
-      "RETURNING $_fields",
-      substitutionValues: {
-        "state": state.state?.index,
-        "activity": state.activity?.index,
-        "lastMessage": state.lastMessage?.index,
-        "lastMessageTime": state.lastMessageTime,
-        "nextStartTime": state.nextStartTime,
-        "batteryLevel": state.batteryLevel,
-        "isCharging": state.isCharging,
-        "totalRunningTime": state.totalRunningTime,
-        "totalCuttingTime": state.totalCuttingTime,
-        "totalChargingTime": state.totalChargingTime,
-        "totalSearchingTime": state.totalSearchingTime,
-        "numberOfCollisions": state.numberOfCollisions,
-        "numberOfChargingCycles": state.numberOfChargingCycles,
-        "bladeUsageTime": state.bladeUsageTime,
-        "createdAt": DateTime.now(),
-      },
-    );
-    final row = result.firstOrNull?.toColumnMap();
-    return row != null ? MowerState.fromJson(row) : null;
+  Future<void> _fetchPage(int pageKey) async {
+    try {
+      final response = await http.get(Uri.parse("https://api.irmancnik.dev/huski/v1/state?page=$pageKey&limit=$_pageSize"));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+        final List<dynamic> jsonList = json["list"];
+        final List<MowerState> newItems = jsonList.map((json) => MowerState.fromJson(json)).toList();
+
+        final isLastPage = newItems.length < _pageSize;
+        if (isLastPage) {
+          _pagingController.appendLastPage(newItems);
+        } else {
+          final nextPageKey = pageKey + 1;
+          _pagingController.appendPage(newItems, nextPageKey);
+        }
+      } else {
+        throw Exception("Failed to load statuses");
+      }
+    } catch (error) {
+      _pagingController.error = error;
+    }
   }
 
-  Future<void> deleteWhereOlderThan(DateTime dateTime) async {
-    await database.query(
-      "DELETE FROM state "
-      "WHERE created_at < @dateTime ",
-      substitutionValues: {"dateTime": dateTime},
+  @override
+  void dispose() {
+    _pagingController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Reports", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async => _pagingController.refresh(),
+        child: PagedListView<int, MowerState>(
+          pagingController: _pagingController,
+          builderDelegate: PagedChildBuilderDelegate<MowerState>(
+            itemBuilder: (context, rawItem, index) {
+              final item = ReadableMowerState.fromMowerState(rawItem);
+              return ExpansionTile(
+                title: Text("${item.niceState} (${item.activity})"),
+                subtitle: Text(item.seenAgo),
+                children: [
+                  ListTile(
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("State: ${item.state}"),
+                        Text("Activity: ${item.activity}"),
+                        Text("Last Message: ${item.lastMessage}"),
+                        if (item.lastMessageTime != null) Text("Reported: ${item.lastMessageTime!}"),
+                        Text("Next Start Time: ${item.nextStartTime}"),
+                        Text("Battery Level: ${item.batteryLevel}%"),
+                        Text("Is Charging: ${item.isCharging}"),
+                        Text("Updated at: ${item.createdAt}"),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
+}
+
+class ReadableMowerState {
+  ReadableMowerState._(
+    this.state,
+    this.niceState,
+    this.activity,
+    this.lastMessage,
+    this.lastMessageTime,
+    this.nextStartTime,
+    this.batteryLevel,
+    this.isCharging,
+    this.createdAt,
+    this.seenAgo,
+  );
+
+  static ReadableMowerState fromMowerState(MowerState mowerState) {
+    final niceState = switch (mowerState.state) {
+      MowerStateEnum.error => "Error",
+      MowerStateEnum.fatalError => "Fatal error",
+      MowerStateEnum.inOperation => "In operation",
+      MowerStateEnum.off => "Off",
+      MowerStateEnum.paused => "Paused",
+      MowerStateEnum.pendingStart => "Pending start",
+      MowerStateEnum.restricted => "Restricted",
+      MowerStateEnum.stopped => "Stopped",
+      MowerStateEnum.waitForSafetyPin => "Waiting for pin",
+      null => "---", // Handle null case
+    };
+    final state = mowerState.state?.toString().replaceAll("MowerStateEnum.", "") ?? "---";
+    final activity = mowerState.activity?.toString().replaceAll("MowerActivity.", "") ?? "---";
+    final lastMessage = mowerState.lastMessage != null ? mowerState.lastMessage!.toString().replaceAll("ErrorCodes.", "") : "---";
+    final lastMessageTime = mowerState.lastMessageTime != null //
+        ? DateTime.fromMillisecondsSinceEpoch(mowerState.lastMessageTime! * 1000).toString()
+        : null;
+    final nextStartTime = mowerState.nextStartTime != null && mowerState.nextStartTime != 0
+        ? DateTime.fromMillisecondsSinceEpoch(mowerState.nextStartTime! * 1000).toString()
+        : "---";
+    final batteryLevel = "${mowerState.batteryLevel ?? "---"}%";
+    final isCharging = mowerState.isCharging == true ? "yes" : "no";
+    final createdAt = mowerState.createdAt!.toString();
+    final seenAgo = "${(DateTime.now().toUtc() - mowerState.createdAt!).inMinutes} minutes ago";
+    return ReadableMowerState._(
+        state, niceState, activity, lastMessage, lastMessageTime, nextStartTime, batteryLevel, isCharging, createdAt, seenAgo);
+  }
+
+  final String state;
+  final String niceState;
+  final String activity;
+  final String lastMessage;
+  final String? lastMessageTime;
+  final String nextStartTime;
+  final String batteryLevel;
+  final String isCharging;
+  final String createdAt;
+  final String seenAgo;
 }
 
 class MowerState with Serializable {
@@ -87,16 +170,17 @@ class MowerState with Serializable {
         numberOfCollisions = json["number_of_collisions"] as int?,
         numberOfChargingCycles = json["number_of_charging_cycles"] as int?,
         bladeUsageTime = json["blade_usage_time"] as int?,
-        createdAt = json["created_at"] as DateTime?;
+        createdAt = DateTime.tryParse(json["created_at"] as String? ?? "");
 
+  @override
   Json toJson() => {
         "name": name,
         "model": model,
         "serial_number": serialNumber,
         "manufacturer": manufacturer,
-        "state": state != null ? state!.index : null,
-        "activity": activity != null ? activity!.index : null,
-        "last_message": lastMessage != null ? lastMessage!.code : null,
+        "state": state?.index,
+        "activity": activity?.index,
+        "last_message": lastMessage?.code,
         "last_message_time": lastMessageTime,
         "next_start_time": nextStartTime,
         "battery_level": batteryLevel,
@@ -320,4 +404,34 @@ extension ErrorCodesExtension on ErrorCodes {
     }
     return ErrorCodes.values[code + border - 701];
   }
+}
+
+typedef Json = Map<String, Object?>;
+
+mixin SerializableTo<T> {
+  @mustCallSuper
+  T toJson();
+}
+
+mixin Serializable implements SerializableTo<Json> {}
+
+extension SerializableJsonList on Iterable<Serializable> {
+  List<Json> toJsonList() => map((entry) => entry.toJson()).toList();
+}
+
+extension DateTimeUtils on DateTime {
+  Duration operator -(DateTime other) => difference(other);
+  DateTime operator +(Duration duration) => add(duration);
+}
+
+extension IntDurationUtils on int {
+  Duration get microseconds => Duration(microseconds: this);
+  Duration get milliseconds => Duration(milliseconds: this);
+  Duration get seconds => Duration(seconds: this);
+  Duration get minutes => Duration(minutes: this);
+  Duration get hours => Duration(hours: this);
+  Duration get days => Duration(days: this);
+  Duration get weeks => Duration(days: this * 7);
+  Duration get months => Duration(days: this * 30);
+  Duration get years => Duration(days: this * 365);
 }

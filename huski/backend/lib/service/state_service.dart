@@ -20,7 +20,9 @@ class StateService with ServiceRenderer {
   final ServiceLogger log = ServiceLogger("StateService");
 
   Future<Response> get(Request request) async {
-    final list = await stateRepository.list();
+    final page = int.tryParse(request.url.queryParameters["page"] ?? "");
+    final limit = int.tryParse(request.url.queryParameters["limit"] ?? "");
+    final list = await stateRepository.list(page ?? 0, limit ?? 50);
     return renderSuccess({"list": list.toJsonList()}, request, log);
   }
 
@@ -31,7 +33,7 @@ class StateService with ServiceRenderer {
     }
 
     final json = jsonDecode(body) as Json;
-    final state = State.fromJson(json);
+    final state = MowerState.fromJson(json);
     final lastHandledMessage = await redisRepository.loadLastHandledMessage();
     if (lastHandledMessage != "${state.lastMessage}:${state.lastMessageTime}") {
       await redisRepository.saveLastHandledMessage("${state.lastMessage}:${state.lastMessageTime}");

@@ -22,7 +22,11 @@ mixin ServiceRenderer {
       render(500, {"error": "internal server error"}, request, log, {"exception": exception?.toString()});
 
   Response render(int statusCode, dynamic body, Request request, ServiceLogger log, [Json? messages]) {
-    final response = Response(statusCode, body: body is Json || body is List ? jsonEncode(body) : body);
+    final response = Response(
+      statusCode,
+      body: body is Json || body is List ? jsonEncode(body) : body,
+      headers: {"Content-Type": "application/json"},
+    );
     log.log(request: request, response: response, messages: messages);
     return response;
   }
