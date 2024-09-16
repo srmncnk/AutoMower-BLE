@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.list),
-            label: "Statuses",
+            label: "Reports",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.control_camera),
