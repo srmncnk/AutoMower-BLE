@@ -22,7 +22,8 @@ class StateService with ServiceRenderer {
   Future<Response> get(Request request) async {
     final page = int.tryParse(request.url.queryParameters["page"] ?? "");
     final limit = int.tryParse(request.url.queryParameters["limit"] ?? "");
-    final list = await stateRepository.list(page ?? 0, limit ?? 50);
+    final distinct = request.url.queryParameters["distinct"] == "true" || request.url.queryParameters["distinct"] == "1";
+    final list = await stateRepository.list(page ?? 0, limit ?? 50, distinct);
     return renderSuccess({"list": list.toJsonList()}, request, log);
   }
 

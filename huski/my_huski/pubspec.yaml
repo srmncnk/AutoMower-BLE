@@ -12,9 +12,11 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.6
+  font_awesome_flutter:
   google_fonts:
   huski_backend:
     path: ../backend
+  intl:
   provider: ^6.0.0
   http: ^0.13.3
   infinite_scroll_pagination: ^3.1.0

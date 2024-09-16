@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import "package:font_awesome_flutter/font_awesome_flutter.dart";
 import "package:http/http.dart" as http;
 import "dart:convert";
 import "dart:async";
@@ -11,7 +12,6 @@ class CommandPage extends StatefulWidget {
 }
 
 class _CommandPageState extends State<CommandPage> {
-  String _selectedCommand = "park";
   String? currentCommand;
   Timer? _timer;
 
@@ -60,34 +60,76 @@ class _CommandPageState extends State<CommandPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Command", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: const Text("Commands", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            DropdownButton<String>(
-              value: _selectedCommand,
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedCommand = newValue!;
-                });
-              },
-              items: <String>["park", "pause", "override", "resume"].map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
+            _buildButton("Resume", "resume", FontAwesomeIcons.play),
+            _buildButton("Pause", "pause", FontAwesomeIcons.pause),
+            _buildButton("Park", "park", FontAwesomeIcons.house),
+            const SizedBox(height: 16),
+            if (currentCommand != null)
+              Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Executing "$currentCommand"', style: TextStyle(fontSize: 16, color: Colors.grey[100])),
+                          Text("Please wait ...", style: TextStyle(fontSize: 12, color: Colors.grey[400])), // Smaller subtitle text
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 12,
+                        width: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton(String title, String command, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 64, vertical: 8),
+      child: ElevatedButton(
+        onPressed: () => sendCommand(command),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.lime,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            const SizedBox(width: 32),
+            FaIcon(icon, color: Colors.black, size: 12),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.black), // Set the text color to white
             ),
-            ElevatedButton(
-              onPressed: () {
-                sendCommand(_selectedCommand);
-              },
-              child: const Text("Send Command"),
-            ),
-            if (currentCommand != null) Text("Executing Command: $currentCommand ..."),
           ],
         ),
       ),

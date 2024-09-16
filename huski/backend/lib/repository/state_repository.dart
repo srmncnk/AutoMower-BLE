@@ -1,4 +1,5 @@
 import "dart:async";
+import "dart:math";
 
 import "package:collection/collection.dart";
 import "package:postgres/postgres.dart";
@@ -13,7 +14,10 @@ class StateRepository {
       "total_running_time, total_cutting_time, total_charging_time, total_searching_time, number_of_collisions, "
       "number_of_charging_cycles, blade_usage_time, created_at";
 
-  Future<List<MowerState>> list(int page, int limit) async {
+  Future<List<MowerState>> list(int page, int limit, bool distinct) async {
+    if (distinct) {
+      return listDistinct(page, limit);
+    }
     final result = await database.query(
       "SELECT $_fields "
       "FROM state "
@@ -26,6 +30,19 @@ class StateRepository {
     );
     final rows = result.map((row) => row.toColumnMap());
     return rows.map(MowerState.fromJson).toList();
+  }
+
+  Future<List<MowerState>> listDistinct(int page, int limit) async {
+    const maxLimit = 1 << 16;
+    final states = await list(0, maxLimit, false);
+    for (var index = 1; index < states.length; index++) {
+      final state = states[index], previousState = states[index - 1];
+      if (state.activity == previousState.activity && state.state == previousState.state) {
+        states.removeAt(index--);
+      }
+    }
+    final startIndex = min(page * limit, states.length), endIndex = min((page + 1) * limit, states.length);
+    return states.sublist(startIndex, endIndex);
   }
 
   Future<MowerState?> save(MowerState state) async {

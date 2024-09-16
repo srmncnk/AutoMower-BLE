@@ -1,7 +1,10 @@
-import "package:flutter/material.dart";
-import "package:infinite_scroll_pagination/infinite_scroll_pagination.dart";
-import "package:http/http.dart" as http;
 import "dart:convert";
+
+import "package:flutter/material.dart";
+import "package:font_awesome_flutter/font_awesome_flutter.dart";
+import "package:infinite_scroll_pagination/infinite_scroll_pagination.dart";
+import "package:intl/intl.dart";
+import "package:http/http.dart" as http;
 
 class StatusPage extends StatefulWidget {
   const StatusPage({super.key});
@@ -12,10 +15,12 @@ class StatusPage extends StatefulWidget {
 
 class _StatusPageState extends State<StatusPage> {
   static const _pageSize = 10;
+  late bool _distinct;
   final PagingController<int, MowerState> _pagingController = PagingController(firstPageKey: 0);
 
   @override
   void initState() {
+    _distinct = true;
     _pagingController.addPageRequestListener((pageKey) {
       _fetchPage(pageKey);
     });
@@ -24,7 +29,8 @@ class _StatusPageState extends State<StatusPage> {
 
   Future<void> _fetchPage(int pageKey) async {
     try {
-      final response = await http.get(Uri.parse("https://api.irmancnik.dev/huski/v1/state?page=$pageKey&limit=$_pageSize"));
+      final response =
+          await http.get(Uri.parse("https://api.irmancnik.dev/huski/v1/state?page=$pageKey&limit=$_pageSize&distinct=$_distinct"));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> json = jsonDecode(response.body);
@@ -56,7 +62,28 @@ class _StatusPageState extends State<StatusPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Reports", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text("Reports", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                const Text("Distinct", style: TextStyle(fontSize: 14)),
+                Checkbox(
+                  value: _distinct,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _distinct = value;
+                        _pagingController.refresh();
+                      });
+                    }
+                  },
+                )
+              ],
+            )
+          ],
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () async => _pagingController.refresh(),
@@ -65,32 +92,97 @@ class _StatusPageState extends State<StatusPage> {
           builderDelegate: PagedChildBuilderDelegate<MowerState>(
             itemBuilder: (context, rawItem, index) {
               final item = ReadableMowerState.fromMowerState(rawItem);
-              return ExpansionTile(
-                title: Text("${item.niceState} (${item.activity})"),
-                subtitle: Text(item.seenAgo),
-                children: [
-                  ListTile(
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: Colors.transparent, // Remove the splash effect
+                  highlightColor: Colors.transparent, // Remove the highlight effect
+                ),
+                child: ExpansionTile(
+                  title: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800, // Background color
+                      borderRadius: BorderRadius.circular(12), // Rounded corners
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Padding inside the container
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween, // Pushes the icon to the right
+                      crossAxisAlignment: CrossAxisAlignment.center, // Aligns content vertically
                       children: [
-                        Text("State: ${item.state}"),
-                        Text("Activity: ${item.activity}"),
-                        Text("Last Message: ${item.lastMessage}"),
-                        if (item.lastMessageTime != null) Text("Reported: ${item.lastMessageTime!}"),
-                        Text("Next Start Time: ${item.nextStartTime}"),
-                        Text("Battery Level: ${item.batteryLevel}%"),
-                        Text("Is Charging: ${item.isCharging}"),
-                        Text("Updated at: ${item.createdAt}"),
+                        // Left-aligned content
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("${item.niceState} (${item.activity})"),
+                            Text(item.seenAgo, style: TextStyle(fontSize: 12, color: Colors.grey[400])), // Smaller subtitle text
+                          ],
+                        ),
+
+                        // Right-aligned FontAwesome icon indicating the state
+                        FaIcon(
+                          _getIcon(rawItem), // Choose the FontAwesome icon based on state
+                          color: _getIconColor(rawItem), // Set color based on item state
+                          size: 12, // Adjust the icon size as needed
+                        ),
                       ],
                     ),
                   ),
-                ],
+                  shape: const RoundedRectangleBorder(side: BorderSide.none),
+                  children: [
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 32),
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("State: ${item.state}", style: const TextStyle(fontSize: 14)),
+                          Text("Activity: ${item.activity}", style: const TextStyle(fontSize: 14)),
+                          Text("Last Message: ${item.lastMessage}", style: const TextStyle(fontSize: 14)),
+                          if (item.lastMessageTime != null)
+                            Text("Reported: ${item.lastMessageTime!}", style: const TextStyle(fontSize: 14)),
+                          Text("Next Start: ${item.nextStartTime}", style: const TextStyle(fontSize: 14)),
+                          Text("Battery Level: ${item.batteryLevel}%", style: const TextStyle(fontSize: 14)),
+                          Text("Is Charging: ${item.isCharging}", style: const TextStyle(fontSize: 14)),
+                          Text("Updated at: ${item.createdAt}", style: const TextStyle(fontSize: 14)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
         ),
       ),
     );
+  }
+
+  IconData _getIcon(MowerState mowerState) {
+    final icon = switch (mowerState.activity) {
+      MowerActivity.charging => FontAwesomeIcons.chargingStation,
+      MowerActivity.goingHome => FontAwesomeIcons.house,
+      MowerActivity.goingOut => FontAwesomeIcons.doorOpen,
+      MowerActivity.mowing => FontAwesomeIcons.seedling,
+      MowerActivity.none => FontAwesomeIcons.question,
+      MowerActivity.parked => FontAwesomeIcons.house,
+      MowerActivity.stoppedInGarden => FontAwesomeIcons.exclamation,
+      null => FontAwesomeIcons.exclamation,
+    };
+    return icon;
+  }
+
+  Color _getIconColor(MowerState mowerState) {
+    final color = switch (mowerState.state) {
+      MowerStateEnum.error => Colors.orange,
+      MowerStateEnum.fatalError => Colors.orange,
+      MowerStateEnum.inOperation => Colors.lime,
+      MowerStateEnum.off => Colors.grey,
+      MowerStateEnum.paused => Colors.white,
+      MowerStateEnum.pendingStart => Colors.white,
+      MowerStateEnum.restricted => Colors.grey,
+      MowerStateEnum.stopped => Colors.white,
+      MowerStateEnum.waitForSafetyPin => Colors.orange,
+      null => Colors.orange, // Handle null case
+    };
+    return color;
   }
 }
 
@@ -109,6 +201,7 @@ class ReadableMowerState {
   );
 
   static ReadableMowerState fromMowerState(MowerState mowerState) {
+    final timeFormat = DateFormat("HH:mm, dd.MM.yy");
     final niceState = switch (mowerState.state) {
       MowerStateEnum.error => "Error",
       MowerStateEnum.fatalError => "Fatal error",
@@ -125,15 +218,26 @@ class ReadableMowerState {
     final activity = mowerState.activity?.toString().replaceAll("MowerActivity.", "") ?? "---";
     final lastMessage = mowerState.lastMessage != null ? mowerState.lastMessage!.toString().replaceAll("ErrorCodes.", "") : "---";
     final lastMessageTime = mowerState.lastMessageTime != null //
-        ? DateTime.fromMillisecondsSinceEpoch(mowerState.lastMessageTime! * 1000).toString()
+        ? timeFormat.format(DateTime.fromMillisecondsSinceEpoch(mowerState.lastMessageTime! * 1000, isUtc: true))
         : null;
     final nextStartTime = mowerState.nextStartTime != null && mowerState.nextStartTime != 0
-        ? DateTime.fromMillisecondsSinceEpoch(mowerState.nextStartTime! * 1000).toString()
+        ? timeFormat.format(DateTime.fromMillisecondsSinceEpoch(mowerState.nextStartTime! * 1000, isUtc: true))
         : "---";
     final batteryLevel = "${mowerState.batteryLevel ?? "---"}%";
     final isCharging = mowerState.isCharging == true ? "yes" : "no";
     final createdAt = mowerState.createdAt!.toString();
-    final seenAgo = "${(DateTime.now().toUtc() - mowerState.createdAt!).inMinutes} minutes ago";
+    final Duration difference = DateTime.now().toUtc().difference(mowerState.createdAt!);
+    String seenAgo;
+    if (difference.inMinutes < 60) {
+      int minutes = difference.inMinutes;
+      seenAgo = "$minutes minute${minutes == 1 ? '' : 's'} ago";
+    } else if (difference.inHours < 24) {
+      int hours = difference.inHours;
+      seenAgo = "$hours hour${hours == 1 ? '' : 's'} ago";
+    } else {
+      int days = difference.inDays;
+      seenAgo = "$days day${days == 1 ? '' : 's'} ago";
+    }
     return ReadableMowerState._(
         state, niceState, activity, lastMessage, lastMessageTime, nextStartTime, batteryLevel, isCharging, createdAt, seenAgo);
   }

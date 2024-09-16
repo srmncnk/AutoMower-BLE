@@ -15,9 +15,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: "My Huski",
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        textTheme: GoogleFonts.interTextTheme(),
+      theme: ThemeData.dark(useMaterial3: true).copyWith(
+        colorScheme: const ColorScheme.dark().copyWith(primary: Colors.lime),
+        textTheme: GoogleFonts.ubuntuTextTheme(),
       ),
       home: const HomePage(),
     );
@@ -49,7 +49,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Huski • AutoMower 305"),
+        title: const Center(child: Text("Huski • Automower® 305")),
       ),
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green,
+        selectedItemColor: Colors.lime,
         onTap: _onItemTapped,
       ),
     );
