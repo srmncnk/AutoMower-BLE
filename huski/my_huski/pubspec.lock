@@ -218,6 +218,13 @@ packages:
       relative: true
     source: path
     version: "0.0.0"
+  huski_common:
+    dependency: "direct main"
+    description:
+      path: "../common"
+      relative: true
+    source: path
+    version: "1.0.0+1"
   infinite_scroll_pagination:
     dependency: "direct main"
     description:

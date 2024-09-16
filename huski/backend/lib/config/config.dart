@@ -1,9 +1,8 @@
 import "dart:io";
 
+import "package:huski_common/huski_common.dart";
 import "package:yaml/yaml.dart";
 import "package:yaml_writer/yaml_writer.dart";
-
-import "../utils/json_utils.dart";
 
 class ApplicationConfig with Serializable {
   ApplicationConfig.fromYaml(YamlMap yaml)

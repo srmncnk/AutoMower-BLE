@@ -16,6 +16,8 @@ dependencies:
   google_fonts:
   huski_backend:
     path: ../backend
+  huski_common:
+    path: ../common
   intl:
   provider: ^6.0.0
   http: ^0.13.3

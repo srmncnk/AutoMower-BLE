@@ -1,8 +1,8 @@
 import "package:flutter/material.dart";
 import "package:font_awesome_flutter/font_awesome_flutter.dart";
-import "package:http/http.dart" as http;
-import "dart:convert";
 import "dart:async";
+
+import "../api/api.dart";
 
 class CommandPage extends StatefulWidget {
   const CommandPage({super.key});
@@ -22,30 +22,20 @@ class _CommandPageState extends State<CommandPage> {
   }
 
   Future<void> fetchCurrentCommand() async {
-    final response = await http.get(Uri.parse("https://api.irmancnik.dev/huski/v1/command"));
+    final command = await HuskiApi.getCommand();
+    setState(() {
+      currentCommand = command;
+    });
 
-    if (response.statusCode == 200) {
-      final command = json.decode(response.body)["command"];
-      setState(() {
-        currentCommand = command;
+    if (command != null && _timer == null) {
+      _timer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+        fetchCurrentCommand();
       });
-
-      if (command != null && _timer == null) {
-        _timer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-          fetchCurrentCommand();
-        });
-      }
     }
   }
 
   Future<void> sendCommand(String command) async {
-    final response = await http.post(
-      Uri.parse("https://api.irmancnik.dev/huski/v1/command"),
-      headers: {"Content-Type": "application/json"},
-      body: json.encode({"command": command}),
-    );
-
-    if (response.statusCode == 200) {
+    if (await HuskiApi.setCommand(command)) {
       fetchCurrentCommand();
     }
   }
@@ -92,7 +82,7 @@ class _CommandPageState extends State<CommandPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Executing "$currentCommand"', style: TextStyle(fontSize: 16, color: Colors.grey[100])),
-                          Text("Please wait ...", style: TextStyle(fontSize: 12, color: Colors.grey[400])), // Smaller subtitle text
+                          Text("Please wait ...", style: TextStyle(fontSize: 12, color: Colors.grey[400])),
                         ],
                       ),
                       const SizedBox(

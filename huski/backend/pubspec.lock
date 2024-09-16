@@ -129,8 +129,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.2"
+  huski_common:
+    dependency: "direct main"
+    description:
+      path: "../common"
+      relative: true
+    source: path
+    version: "1.0.0+1"
   intl:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: intl
       sha256: "910f85bce16fb5c6f614e117efa303e85a1731bb0081edf3604a2ae6e9a3cc91"
@@ -442,4 +449,4 @@ packages:
     source: hosted
     version: "2.0.0"
 sdks:
-  dart: ">=3.0.0 <4.0.0"
+  dart: ">=3.3.1 <4.0.0"

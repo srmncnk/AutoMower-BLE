@@ -3,9 +3,8 @@
 import "dart:convert";
 import "dart:io";
 
+import "package:huski_common/huski_common.dart";
 import "package:shelf/shelf.dart";
-
-import "json_utils.dart";
 
 class ServiceLogger {
   ServiceLogger(this.service);

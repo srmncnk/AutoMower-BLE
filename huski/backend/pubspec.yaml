@@ -10,6 +10,9 @@ dependencies:
   crypto: ^3.0.1
   encrypt:
   http: ^0.13.0
+  huski_common:
+    path: ../common
+  intl:
   jose:
   mailer:
   minio:

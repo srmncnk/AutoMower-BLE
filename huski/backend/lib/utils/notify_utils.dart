@@ -1,9 +1,8 @@
-import 'dart:convert';
-
+import 'package:huski_common/huski_common.dart';
+import 'package:intl/intl.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
 
-import '../repository/state_repository.dart';
 import 'logger_utils.dart';
 
 class Notifier {
@@ -28,18 +27,17 @@ class Notifier {
       allowInsecure: true,
     );
 
+    final timeFormat = DateFormat("HH:mm, dd.MM.yy");
+    final lastMessage = state.lastMessage != null ? state.lastMessage!.toString().replaceAll("ErrorCodes.", "") : "---";
+    final lastMessageTime = state.lastMessageTime != null //
+        ? timeFormat.format(DateTime.fromMillisecondsSinceEpoch(state.lastMessageTime! * 1000, isUtc: true))
+        : null;
+
     final message = Message()
       ..from = Address(from, fromName)
       ..recipients.addAll(to)
-      ..subject = "New message from Huski"
-      ..text = jsonEncode({
-        ...state.toJson(),
-        if (state.state != null) "readable_state": state.toString(),
-        if (state.activity != null) "readable_activity": state.activity!.toString(),
-        if (state.lastMessage != null) "readable_last_message": state.lastMessage!.toString(),
-        if (state.lastMessageTime != null) "readable_last_message_time": DateTime.fromMillisecondsSinceEpoch(state.lastMessageTime!).toIso8601String(),
-        if (state.nextStartTime != null) "readable_next_start_time": DateTime.fromMillisecondsSinceEpoch(state.nextStartTime!).toIso8601String(),
-      });
+      ..subject = "Huski has just sent you a new message"
+      ..text = "The new message is called '$lastMessage'. It was recorded at $lastMessageTime.\n\nKind regards,\nHuski";
 
     try {
       final sendReport = await send(message, smtpServer);
