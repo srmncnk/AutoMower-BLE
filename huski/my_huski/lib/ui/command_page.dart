@@ -116,7 +116,7 @@ class _CommandPageState extends State<CommandPage> {
       child: ElevatedButton(
         onPressed: () => sendCommand(command),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.lime,
+          backgroundColor: Colors.teal.shade200,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
         ),

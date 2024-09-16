@@ -173,7 +173,7 @@ class _StatusPageState extends State<StatusPage> {
     final color = switch (mowerState.state) {
       MowerStateEnum.error => Colors.orange,
       MowerStateEnum.fatalError => Colors.orange,
-      MowerStateEnum.inOperation => Colors.lime,
+      MowerStateEnum.inOperation => Colors.teal.shade200,
       MowerStateEnum.off => Colors.grey,
       MowerStateEnum.paused => Colors.white,
       MowerStateEnum.pendingStart => Colors.white,

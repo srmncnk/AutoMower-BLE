@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: "My Huski",
       theme: ThemeData.dark(useMaterial3: true).copyWith(
-        colorScheme: const ColorScheme.dark().copyWith(primary: Colors.lime),
+        colorScheme: const ColorScheme.dark().copyWith(primary: Colors.teal.shade200),
         textTheme: GoogleFonts.ubuntuTextTheme(),
       ),
       home: const HomePage(),
@@ -64,7 +64,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.lime,
+        selectedItemColor: Colors.teal.shade200,
         onTap: _onItemTapped,
       ),
     );
