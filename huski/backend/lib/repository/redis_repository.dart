@@ -11,6 +11,7 @@ class RedisRepository {
   final Command redis;
   static const _commandKey = "huski:command";
   static const _messageKey = "huski:last_handled_message";
+  static const _pingKey = "huski:ping";
 
   Future<String?> loadCommand() async {
     final command = await redis.get(_commandKey) as String?;
@@ -32,5 +33,14 @@ class RedisRepository {
 
   Future<void> saveLastHandledMessage(String message) async {
     await redis.set(_messageKey, message);
+  }
+
+  Future<String?> loadPing() async {
+    final command = await redis.get(_pingKey) as String?;
+    return command;
+  }
+
+  Future<void> savePing(String command) async {
+    await redis.setWithTTL(_pingKey, command, 2.minutes);
   }
 }

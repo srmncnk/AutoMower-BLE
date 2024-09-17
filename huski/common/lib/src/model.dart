@@ -21,6 +21,27 @@ class MowerState with Serializable {
         numberOfCollisions = json["number_of_collisions"] as int?,
         numberOfChargingCycles = json["number_of_charging_cycles"] as int?,
         bladeUsageTime = json["blade_usage_time"] as int?,
+        createdAt = DateTime.tryParse(json["created_at"] as String? ?? "");
+
+  MowerState.fromDatabaseRow(Json json)
+      : name = json["name"] as String?,
+        model = json["model"] as String?,
+        serialNumber = json["serial_number"] as int?,
+        manufacturer = json["manufacturer"] as String?,
+        state = json["state"] is int ? MowerStateEnum.values[json["state"] as int] : null,
+        activity = json["activity"] is int ? MowerActivity.values[json["activity"] as int] : null,
+        lastMessage = json["last_message"] is int ? ErrorCodesExtension.fromCode(json["last_message"] as int) : null,
+        lastMessageTime = json["last_message_time"] as int?,
+        nextStartTime = json["next_start_time"] as int?,
+        batteryLevel = json["battery_level"] as int?,
+        isCharging = json["is_charging"] as bool?,
+        totalRunningTime = json["total_running_time"] as int?,
+        totalCuttingTime = json["total_cutting_time"] as int?,
+        totalChargingTime = json["total_charging_time"] as int?,
+        totalSearchingTime = json["total_searching_time"] as int?,
+        numberOfCollisions = json["number_of_collisions"] as int?,
+        numberOfChargingCycles = json["number_of_charging_cycles"] as int?,
+        bladeUsageTime = json["blade_usage_time"] as int?,
         createdAt = json["created_at"] as DateTime?;
 
   Json toJson() => {

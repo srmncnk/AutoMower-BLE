@@ -27,6 +27,8 @@ from bleak import BleakScanner
 
 logger = logging.getLogger(__name__)
 
+async def call_with_timeout(coro, timeout_seconds=10):
+    return await asyncio.wait_for(coro, timeout=timeout_seconds)
 
 class Mower(BLEClient):
     def __init__(self, channel_id: int, address, pin=None):
@@ -39,7 +41,7 @@ class Mower(BLEClient):
         """
         command = Command(self.channel_id, self.protocol[command_name])
         request = command.generate_request(**kwargs)
-        response = await self._request_response(request)
+        response = await call_with_timeout(self._request_response(request))
         if response is None:
             return None
 

@@ -28,7 +28,7 @@ class StateRepository {
       },
     );
     final rows = result.map((row) => row.toColumnMap());
-    return rows.map(MowerState.fromJson).toList();
+    return rows.map(MowerState.fromDatabaseRow).toList();
   }
 
   Future<List<MowerState>> listDistinct(int page, int limit) async {
@@ -71,7 +71,7 @@ class StateRepository {
       },
     );
     final row = result.firstOrNull?.toColumnMap();
-    return row != null ? MowerState.fromJson(row) : null;
+    return row != null ? MowerState.fromDatabaseRow(row) : null;
   }
 
   Future<void> deleteWhereOlderThan(DateTime dateTime) async {

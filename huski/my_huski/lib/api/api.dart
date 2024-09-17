@@ -29,10 +29,18 @@ class HuskiApi {
   }
 
   static Future<bool> setCommand(String command) async {
-    final response = await http.post(Uri.parse("$_baseApi/command"),
+    final response = await http.post(
+      Uri.parse("$_baseApi/command"),
       headers: {"Content-Type": "application/json"},
       body: json.encode({"command": command}),
     );
     return response.statusCode == 200;
+  }
+
+  static Future<bool> getPing() async {
+    final response = await http.get(Uri.parse("$_baseApi/ping"));
+    final Map<String, dynamic> json = jsonDecode(response.body);
+    final ping = json["ping"];
+    return ping == "pong";
   }
 }

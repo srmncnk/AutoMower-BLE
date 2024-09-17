@@ -16,11 +16,13 @@ class StatusPage extends StatefulWidget {
 class _StatusPageState extends State<StatusPage> {
   static const _pageSize = 10;
   late bool _distinct;
+  late bool _ping;
   final PagingController<int, MowerState> _pagingController = PagingController(firstPageKey: 0);
 
   @override
   void initState() {
     _distinct = true;
+    _ping = false;
     _pagingController.addPageRequestListener((pageKey) {
       _fetchPage(pageKey);
     });
@@ -37,6 +39,8 @@ class _StatusPageState extends State<StatusPage> {
         final nextPageKey = pageKey + 1;
         _pagingController.appendPage(list, nextPageKey);
       }
+      _ping = await HuskiApi.getPing();
+      setState(() {});
     } catch (error) {
       _pagingController.error = error;
     }
@@ -55,7 +59,10 @@ class _StatusPageState extends State<StatusPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("Reports", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Row(children: [
+              const Text("Reports", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(" •", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _ping ? Colors.green : Colors.transparent)),
+            ]),
             Row(
               children: [
                 const Text("Distinct", style: TextStyle(fontSize: 14)),
@@ -119,7 +126,7 @@ class _StatusPageState extends State<StatusPage> {
                           if (item.lastMessageTime != null)
                             Text("Reported: ${item.lastMessageTime!}", style: const TextStyle(fontSize: 14)),
                           Text("Next Start: ${item.nextStartTime}", style: const TextStyle(fontSize: 14)),
-                          Text("Battery Level: ${item.batteryLevel}%", style: const TextStyle(fontSize: 14)),
+                          Text("Battery Level: ${item.batteryLevel}", style: const TextStyle(fontSize: 14)),
                           Text("Is Charging: ${item.isCharging}", style: const TextStyle(fontSize: 14)),
                           Text("Updated at: ${item.createdAt}", style: const TextStyle(fontSize: 14)),
                         ],

@@ -24,8 +24,6 @@ class MyApp(App):
             self.check_android_permissions()
 
         Clock.schedule_interval(self.start_background_thread, 60)
-        # self.start_background_thread()
-
         return self.label
 
     def check_android_permissions(self):
@@ -65,15 +63,20 @@ class MyApp(App):
 
 
     def start_background_thread(self, _):
+        httpx.Client().post("https://api.irmancnik.dev/huski/v1/ping", json={"ping": "pong"})
         current_time = datetime.now().time()
         start_time = current_time.replace(hour=7, minute=0, second=0, microsecond=0)
         end_time = current_time.replace(hour=21, minute=0, second=0, microsecond=0)
         if current_time < start_time or current_time > end_time:
             return
-        asyncio.run(self.call_mower())
+        try:
+            asyncio.run(self.call_mower())
+        except:
+            return
 
     async def call_mower(self):
         mower = Mower(1197489078, "60:98:66:EF:B0:0B", 6612)
+        device = None
         try:
             def update_label_clear():
                 Clock.schedule_once(lambda dt: self.label_clear(), 0)
@@ -95,8 +98,8 @@ class MyApp(App):
             device = await BleakScanner.find_device_by_address(mower.address)
 
             if device is None:
-                update_label_text(f"Unable to connect to device address: {mower.address}\n"
-                                "Please make sure the device is correct, powered on, and nearby")
+                update_label_text(f"Unable to connect to device")
+                update_label_text(f"Last check: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 return
 
             await mower.connect(device)
@@ -197,10 +200,12 @@ class MyApp(App):
             update_label_text(f"Error. {e}")
         finally:
             try:
-                await mower.disconnect()
+                if device is not None:
+                    await mower.disconnect()
                 update_label_text("Disconnected from mower.")
             except:
                 update_label_text("Error disconnecting from mower.")
+                update_label_text(f"Last check: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     def label_update(self, new_text):
         self.label.text += "\n" + new_text

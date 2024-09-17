@@ -46,6 +46,7 @@ class StateService with ServiceRenderer {
       return renderError("State not saved", request, log);
     }
 
+    await redisRepository.savePing("pong");
     await stateRepository.deleteWhereOlderThan(DateTime.now().toUtc().subtract(30.days));
     final command = await redisRepository.loadCommand();
     await redisRepository.deleteCommand();

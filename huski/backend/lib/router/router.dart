@@ -9,6 +9,7 @@ import "../config/config.dart";
 import "../repository/redis_repository.dart";
 import "../repository/state_repository.dart";
 import "../service/command_service.dart";
+import "../service/ping_service.dart";
 import "../service/state_service.dart";
 import "../utils/notify_utils.dart";
 import "cors.dart" as cors;
@@ -56,6 +57,11 @@ Router _initPublicRoutes(ApplicationConfig config, PostgreSQLConnection database
   final stateService = StateService(stateRepository, redisRepository, notifier);
   routes.get("/state", stateService.get);
   routes.post("/state", stateService.post);
+
+  //* PingService
+  final pingService = PingService(redisRepository);
+  routes.get("/ping", pingService.get);
+  routes.post("/ping", pingService.post);
 
   final topLevelRouter = Router();
   topLevelRouter.mount("/v1/", routes.call);
