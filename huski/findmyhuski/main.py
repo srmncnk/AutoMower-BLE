@@ -9,19 +9,24 @@ import asyncio
 from kivy.utils import platform
 from my_automower_ble.error_codes import ErrorCodes
 from my_automower_ble.mower import Mower
+import os
 
-# For Android-specific imports
 if platform == 'android':
     from jnius import autoclass # type: ignore
     from android.permissions import request_permissions, Permission # type: ignore
 
-# Create the App class
+async def call_with_timeout(coro, timeout_seconds=10):
+        return await asyncio.wait_for(coro, timeout=timeout_seconds)
+
 class MyApp(App):
     def build(self):
         self.label = Label(text="Connecting ...")
 
         if platform == 'android':
             self.check_android_permissions()
+
+        self.log_file_path = self.setup_logging()
+        self.log("App started")
 
         Clock.schedule_interval(self.start_background_thread, 60)
         return self.label
@@ -63,6 +68,7 @@ class MyApp(App):
 
 
     def start_background_thread(self, _):
+        self.log("STEP 1")
         httpx.Client().post("https://api.irmancnik.dev/huski/v1/ping", json={"ping": "pong"})
         current_time = datetime.now().time()
         start_time = current_time.replace(hour=7, minute=0, second=0, microsecond=0)
@@ -70,11 +76,13 @@ class MyApp(App):
         if current_time < start_time or current_time > end_time:
             return
         try:
+            self.log("STEP 2")
             asyncio.run(self.call_mower())
         except:
             return
 
     async def call_mower(self):
+        self.log("STEP 3")
         mower = Mower(1197489078, "60:98:66:EF:B0:0B", 6612)
         device = None
         try:
@@ -86,6 +94,7 @@ class MyApp(App):
             update_label_clear()
             update_label_text("Connecting ...")
 
+            self.log("STEP 4")
             from kivy.utils import platform
             if platform == 'android':
                 from jnius import autoclass # type: ignore
@@ -96,57 +105,71 @@ class MyApp(App):
                 UUID = autoclass('java.util.UUID')
                 UUID.__hash__ = UUID.hashCode
             device = await BleakScanner.find_device_by_address(mower.address)
+            self.log("STEP 5")
 
             if device is None:
                 update_label_text(f"Unable to connect to device")
                 update_label_text(f"Last check: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
                 return
 
-            await mower.connect(device)
+            self.log("STEP 6")
+            await call_with_timeout(mower.connect(device))
             update_label_text("Connected to mower.")
 
+            self.log("STEP 7")
             manufacturer = await mower.get_manufacturer()
             update_label_text(f"Mower manufacturer: {manufacturer}")
 
+            self.log("STEP 8")
             model = await mower.get_model()
             update_label_text(f"Mower model: {model}")
 
+            self.log("STEP 9")
             charging = await mower.is_charging()
             if charging:
                 update_label_text("Mower is charging")
             else:
                 update_label_text("Mower is not charging")
 
+            self.log("STEP 10")
             battery_level = await mower.battery_level()
             update_label_text(f"Battery level: {battery_level}%")
 
+            self.log("STEP 11")
             state = await mower.mower_state()
             if state:
                 update_label_text(f"Mower state: {state.name}")
 
+            self.log("STEP 12")
             activity = await mower.mower_activity()
             if activity:
                 update_label_text(f"Mower activity: {activity.name}")
 
+            self.log("STEP 13")
             next_start_time = await mower.mower_next_start_time()
             if next_start_time:
                 update_label_text(f"Next start time: {next_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
             else:
                 update_label_text("No next start time")
 
+            self.log("STEP 14")
             statuses = await mower.command("GetAllStatistics")
             for status, value in statuses.items():
                 update_label_text(f"{status}: {value}")
 
+            self.log("STEP 15")
             serial_number = await mower.command("GetSerialNumber")
             update_label_text(f"Serial number: {serial_number}")
 
+            self.log("STEP 16")
             mower_name = await mower.command("GetUserMowerNameAsAsciiString")
             update_label_text(f"Mower name: {mower_name}")
 
+            self.log("STEP 17")
             next_start_time = await mower.command("GetNextStartTime")
             update_label_text(f"GetNextStartTime: {json.dumps(next_start_time)}")
 
+            self.log("STEP 18")
             last_message = await mower.command("GetMessage", messageId=0)
             update_label_text("Last message:")
             update_label_text(datetime.fromtimestamp(last_message["time"], timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
@@ -196,10 +219,12 @@ class MyApp(App):
                     update_label_text("Data sent, no command found.")
             else:
                 update_label_text(f"Failed to send data. Status code: {response.status_code}")
+            self.log("STEP 19")
         except Exception as e:
             update_label_text(f"Error. {e}")
         finally:
             try:
+                self.log("STEP 20")
                 if device is not None:
                     await mower.disconnect()
                 update_label_text("Disconnected from mower.")
@@ -212,6 +237,29 @@ class MyApp(App):
 
     def label_clear(self):
         self.label.text = ""
+
+    def setup_logging(self):
+        if platform == 'android':
+            Context = autoclass('android.content.Context')
+            Environment = autoclass('android.os.Environment')
+            current_activity = autoclass('org.kivy.android.PythonActivity').mActivity
+            external_dir = current_activity.getExternalFilesDir(None)
+            log_folder = external_dir.getAbsolutePath()
+        else:
+            log_folder = './logs'
+            os.makedirs(log_folder, exist_ok=True)
+
+        log_file = os.path.join(log_folder, 'huski.log')
+        return log_file
+
+    def log(self, message):
+        try:
+            fullMessage = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message}\n"
+            with open(self.log_file_path, 'a') as log_file:
+                log_file.write(fullMessage)
+            print(fullMessage)
+        except Exception as e:
+            print(f"Error: {str(e)}")
 
 if __name__ == '__main__':
     MyApp().run()
