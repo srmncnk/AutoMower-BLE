@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 from bleak import BleakScanner
 import httpx
@@ -10,6 +10,9 @@ from kivy.utils import platform
 from my_automower_ble.error_codes import ErrorCodes
 from my_automower_ble.mower import Mower
 import os
+import threading
+import time
+import sys
 
 if platform == 'android':
     from jnius import autoclass # type: ignore
@@ -20,6 +23,7 @@ async def call_with_timeout(coro, timeout_seconds=10):
 
 class MyApp(App):
     def build(self):
+        self.last_check = datetime.now()
         self.label = Label(text="Connecting ...")
 
         if platform == 'android':
@@ -29,6 +33,7 @@ class MyApp(App):
         self.log("App started")
 
         Clock.schedule_interval(self.start_background_thread, 60)
+        self.start_watchdog()
         return self.label
 
     def check_android_permissions(self):
@@ -83,6 +88,7 @@ class MyApp(App):
 
     async def call_mower(self):
         self.log("STEP 3")
+        self.last_check = datetime.now()
         mower = Mower(1197489078, "60:98:66:EF:B0:0B", 6612)
         device = None
         try:
@@ -260,6 +266,39 @@ class MyApp(App):
             print(fullMessage)
         except Exception as e:
             print(f"Error: {str(e)}")
+
+    def start_watchdog(self):
+        # Create and start a thread
+        thread = threading.Thread(target=self.watchdog, daemon=True)
+        thread.start()
+
+    def watchdog(self):
+        while True:
+            try:
+                time.sleep(60)
+                print("Background task running...")
+                if self.last_check is not None and datetime.now() - self.last_check > timedelta(minutes=5):
+                    self.log(f"Restarting app...")
+                    self.restart_app()
+                else:
+                    time_ago = datetime.now() - self.last_check
+                    print(f"Last check was done {time_ago} ago (self.last_check: {self.last_check})")
+                    self.log(f"Last check was done {time_ago} ago (self.last_check: {self.last_check})")
+            except:
+                self.log(f"Exception during watchdog")
+
+    def restart_app(self):
+        from jnius import autoclass # type: ignore
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        context = PythonActivity.mActivity.getApplicationContext()
+        activity = PythonActivity.mActivity
+        intent = context.getPackageManager().getLaunchIntentForPackage("com.irmancnik.restart_huski")
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+        activity.finish()
+        sys.exit(0)
 
 if __name__ == '__main__':
     MyApp().run()

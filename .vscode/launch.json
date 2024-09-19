@@ -27,5 +27,11 @@
             "request": "launch",
             "program": "${workspaceFolder}/huski/my_huski/lib/main.dart",
         },
+        {
+            "name": "Debug Restart Huski",
+            "type": "dart",
+            "request": "launch",
+            "program": "${workspaceFolder}/huski/restart_huski/lib/main.dart",
+        },
     ]
 }
