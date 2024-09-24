@@ -1,57 +1,37 @@
 import 'dart:async';
-import 'dart:ui';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:external_app_launcher/external_app_launcher.dart';
 
-void startBackgroundService() {
-  final service = FlutterBackgroundService();
-  service.startService();
-}
-
-void stopBackgroundService() {
-  final service = FlutterBackgroundService();
-  service.invoke("stop");
-}
-
-Future<void> initializeService() async {
-  final service = FlutterBackgroundService();
-
-  await service.configure(
-    iosConfiguration: IosConfiguration(
-      autoStart: true,
-      onForeground: onStart,
-      onBackground: onIosBackground,
-    ),
-    androidConfiguration: AndroidConfiguration(
-      autoStart: true,
-      onStart: onStart,
-      isForegroundMode: true,
-      autoStartOnBoot: true,
-    ),
-  );
-}
-
-@pragma('vm:entry-point')
-Future<bool> onIosBackground(ServiceInstance service) async {
-  WidgetsFlutterBinding.ensureInitialized();
-  DartPluginRegistrant.ensureInitialized();
-
-  return true;
-}
-
-@pragma('vm:entry-point')
-void onStart(ServiceInstance service) async {
-  Timer.periodic(const Duration(seconds: 60), (timer) {
-    // ignore: avoid_print
-    print("service is successfully running ${DateTime.now().second}");
-    LaunchApp.openApp(androidPackageName: "com.irmancnik.findmyhuski");
-  });
-}
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late Timer openTimer;
+  late Timer closeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    openTimer = Timer(const Duration(seconds: 5), () {
+      LaunchApp.openApp(androidPackageName: "com.irmancnik.findmyhuski");
+    });
+    closeTimer = Timer(const Duration(seconds: 10), () {
+      exit(0);
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    openTimer.cancel();
+    closeTimer.cancel();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +48,5 @@ class MyApp extends StatelessWidget {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeService();
   runApp(const MyApp());
 }

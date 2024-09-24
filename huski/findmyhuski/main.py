@@ -74,7 +74,10 @@ class MyApp(App):
 
     def start_background_thread(self, _):
         self.log("STEP 1")
-        httpx.Client().post("https://api.irmancnik.dev/huski/v1/ping", json={"ping": "pong"})
+        try:
+            httpx.Client().post("https://api.irmancnik.dev/huski/v1/ping", json={"ping": "pong"})
+        except:
+            _
         current_time = datetime.now().time()
         start_time = current_time.replace(hour=7, minute=0, second=0, microsecond=0)
         end_time = current_time.replace(hour=21, minute=0, second=0, microsecond=0)
